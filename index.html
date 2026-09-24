@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+
+<html lang="id">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Cugo App - Manajemen Laundry</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    
+
+    <script>
+
+        tailwind.config = {
+
+            theme: {
+
+                extend: {
+
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+
+                    colors: {
+
+                        'cugo-navy': '#0D2340', 'cugo-navy-light': '#1E3A5F',
+
+                        'cugo-teal': '#00B3A4', 'cugo-gray': '#D9E1E8'
+
+                    }
+
+                }
+
+            }
+
+        }
+
+    </script>
+
+    <style>
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        canvas { max-height: 300px; }
+
+        
+
+        @media print {
+
+            body * { visibility: hidden; }
+
+            #cetak-area, #cetak-area * { visibility: visible; }
+
+            #cetak-area { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; }
+
+            .no-print { display: none !important; }
+
+            .shadow-sm { box-shadow: none !important; }
+
+            .bg-gray-100 { background-color: #f3f4f6 !important; -webkit-print-color-adjust: exact; }
+
+        }
+
+    </style>
+
+</head>
+
+<body class="bg-gray-50 text-gray-800 h-screen overflow-hidden flex font-sans">
+
+
+
+    <div id="login-screen" class="fixed inset-0 z-[100] bg-cugo-navy flex items-center justify-center transition-opacity duration-500">
+
+        <div class="bg-white p-8 rounded-2xl shadow-2xl w-96 max-w-[90%] transform transition-all">
+
+            <div class="flex flex-col items-center justify-center mb-6">
+
+                <img crossorigin="anonymous" src="https://lh3.googleusercontent.com/d/17Gq_9a-wDC8duYMptTvk9Gp0Ga2MkW8k" 
+
+                     alt="Cugo Logo" class="h-16 w-auto object-contain mb-1">
+
+                <p class="text-xs font-bold text-cugo-teal">cugo.id</p>
+
+            </div>
+
+            <h2 class="text-2xl font-bold text-center text-cugo-navy mb-2">Selamat Datang</h2>
+
+            <form id="form-login" onsubmit="handleLogin(event)">
+
+                <div class="mb-4">
+
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+
+                    <div class="relative">
+
+                        <i class="fas fa-user absolute left-3 top-3 text-gray-400"></i>
+
+                        <input type="text" id="login-username" class="w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cugo-teal" required>
+
+                    </div>
+
+                </div>
+
+                <div class="mb-6">
+
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+
+                    <div class="relative">
+
+                        <i class="fas fa-lock absolute left-3 top-3 text-gray-400"></i>
+
+                        <input type="password" id="login-password" class="w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cugo-teal" required>
+
+                    </div>
+
+                    <p class="text-xs text-gray-400 mt-2 text-center">Hint: Owner atau staff</p>
+
+                </div>
+
+                <p id="login-error" class="text-red-500 text-sm mb-4 hidden text-center font-medium">Username atau Password salah!</p>
+
+                <button type="submit" class="w-full bg-cugo-teal hover:bg-teal-500 text-white font-bold py-2 rounded-lg shadow-md transition-colors">Masuk</button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- Mobile Menu Backdrop -->
+
+    <div id="mobile-menu-backdrop" onclick="toggleMobileMenu()" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden md:hidden"></div>
+
+
+
+    <aside id="sidebar" class="w-64 bg-cugo-navy text-white flex flex-col fixed inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 z-50 no-print shadow-2xl md:shadow-none">
+
+        <div class="p-5 flex justify-between items-center bg-white border-b border-gray-200">
+
+            <div class="flex flex-col items-center flex-1">
+
+                <img crossorigin="anonymous" src="https://lh3.googleusercontent.com/d/17Gq_9a-wDC8duYMptTvk9Gp0Ga2MkW8k" 
+
+                     alt="Cugo Logo" class="h-10 w-auto object-contain mb-1">
+
+                <p class="text-[10px] font-bold text-cugo-teal">cugo.id</p>
+
+            </div>
+
+            <button onclick="toggleMobileMenu()" class="md:hidden text-gray-500 hover:text-gray-800"><i class="fas fa-times text-xl"></i></button>
+
+        </div>
+
+        
+
+        <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+
+            <p class="px-3 text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Operasional Utama</p>
+
+            <button id="menu-dashboard" onclick="switchPage('dashboard')" class="sidebar-menu bg-cugo-teal text-white w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg hover:bg-cugo-navy-light transition-colors text-left text-sm"><i class="fas fa-chart-pie w-5 text-center"></i><span class="font-medium">Dasbor Kinerja</span></button>
+
+            <button id="menu-rekap-kerja" onclick="switchPage('rekap-kerja')" class="sidebar-menu text-gray-400 w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg hover:bg-cugo-navy-light transition-colors text-left text-sm"><i class="fas fa-clipboard-list w-5 text-center"></i><span class="font-medium">Rekap Kerja Staff</span></button>
+
+            <button id="menu-pesanan" onclick="switchPage('pesanan')" class="sidebar-menu text-gray-400 w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg hover:bg-cugo-navy-light transition-colors text-left text-sm"><i class="fas fa-tshirt w-5 text-center"></i><span class="font-medium">Data Pesanan</span></button>
+
+            <button id="menu-pelanggan" onclick="switchPage('pelanggan')" class="sidebar-menu text-gray-400 w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg hover:bg-cugo-navy-light transition-colors text-left text-sm"><i class="fas fa-users w-5 text-center"></i><span class="font-medium">Data Pelanggan</span></button>
+
+            <button id="menu-karyawan" onclick="switchPage('karyawan')" class="sidebar-menu text-gray-400 w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg hover:bg-cugo-navy-light transition-colors text-left text-sm"><i class="fas fa-user-cog w-5 text-center"></i><span class="font-medium">Data Karyawan</span></button>
+
+            <button id="menu-kedisiplinan" onclick="switchPage('kedisiplinan')" class="sidebar-menu text-gray-400 w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg hover:bg-cugo-navy-light transition-colors text-left text-sm"><i class="fas fa-user-shield w-5 text-center"></i><span class="font-medium">Kedisiplinan</span></button>
+
+            <button id="menu-inventori" onclick="switchPage('inventori')" class="sidebar-menu text-gray-400 w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg hover:bg-cugo-navy-light transition-colors text-left text-sm"><i class="fas fa-boxes w-5 text-center"></i><span class="font-medium">Inventori Gudang</span></button>
+
+            
+
+            <p class="px-3 text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1 mt-4">Keuangan & Administrasi</p>
+
+            <button id="menu-keuangan" onclick="switchPage('keuangan')" class="sidebar-menu text-gray-400 w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg hover:bg-cugo-navy-light transition-colors text-left text-sm"><i class="fas fa-wallet w-5 text-center"></i><span class="font-medium">Buku Kas (Laba/Rugi)</span></button>
+
+            <button id="menu-invoice" onclick="switchPage('invoice')" class="sidebar-menu text-gray-400 w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg hover:bg-cugo-navy-light transition-colors text-left text-sm"><i class="fas fa-file-invoice-dollar w-5 text-center text-yellow-400"></i><span class="font-medium">Buat Invoice B2B</span></button>
+
+            <button id="menu-slip-gaji" onclick="switchPage('slip-gaji')" class="sidebar-menu text-gray-400 w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg hover:bg-cugo-navy-light transition-colors text-left text-sm"><i class="fas fa-money-check-alt w-5 text-center text-green-400"></i><span class="font-medium">Cetak Slip Gaji</span></button>
+
+        </nav>
+
+    </aside>
+
+
+
+    <main class="flex-1 flex flex-col h-screen overflow-hidden bg-gray-50 relative w-full">
+
+        <header class="bg-white shadow-sm border-b px-4 md:px-6 py-4 flex justify-between items-center z-10 no-print">
+
+            <div class="flex items-center gap-3">
+
+                <button onclick="toggleMobileMenu()" class="md:hidden text-cugo-navy text-xl p-1"><i class="fas fa-bars"></i></button>
+
+                <h1 id="header-title" class="text-xl md:text-2xl font-bold text-cugo-navy">Dasbor Kinerja</h1>
+
+            </div>
+
+            <div class="flex space-x-2 md:space-x-4 items-center">
+
+                <button id="btn-refresh" onclick="fetchAppData()" class="text-cugo-teal hover:text-teal-600 text-xs md:text-sm font-medium transition-colors"><i class="fas fa-sync-alt mr-1"></i> <span class="hidden md:inline">Segarkan</span></button>
+
+                <button onclick="logout()" class="text-red-400 hover:text-red-600 transition-colors bg-red-50 p-2 rounded-full" title="Keluar"><i class="fas fa-sign-out-alt text-lg md:text-xl"></i></button>
+
+            </div>
+
+        </header>
+
+
+
+        <!-- GLOBAL DATE FILTER -->
+
+        <div id="global-filter-bar" class="bg-white border-b px-4 md:px-6 py-3 flex flex-col xl:flex-row gap-4 items-start xl:items-center justify-between z-10 no-print shadow-sm">
+
+            <div class="flex items-center space-x-2 md:space-x-3 text-sm flex-wrap w-full">
+
+                <i class="fas fa-calendar-alt text-cugo-teal text-lg hidden sm:block"></i>
+
+                <span class="font-bold text-gray-700">Filter:</span>
+
+                <div class="flex items-center space-x-2 w-full sm:w-auto mt-2 sm:mt-0">
+
+                    <input type="date" id="filter-start" class="border rounded-md px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-cugo-teal text-gray-700 w-full sm:w-auto text-xs md:text-sm">
+
+                    <span class="text-gray-500 font-medium">s/d</span>
+
+                    <input type="date" id="filter-end" class="border rounded-md px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-cugo-teal text-gray-700 w-full sm:w-auto text-xs md:text-sm">
+
+                </div>
+
+                <div class="flex space-x-2 mt-2 sm:mt-0 w-full sm:w-auto">
+
+                    <button onclick="applyGlobalFilter()" class="bg-cugo-navy text-white px-3 py-1.5 rounded-md hover:bg-cugo-navy-light transition-colors font-medium text-xs md:text-sm flex-1 sm:flex-none shadow-sm"><i class="fas fa-filter mr-1"></i> Terapkan</button>
+
+                    <button onclick="resetGlobalFilter()" class="bg-gray-200 text-gray-700 px-3 py-1.5 rounded-md hover:bg-gray-300 transition-colors font-medium text-xs md:text-sm shadow-sm flex-1 sm:flex-none"><i class="fas fa-times mr-1"></i> Reset</button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <div class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
+
+            
+
+            <section id="inventori" class="page-content hidden space-y-6 no-print">
+
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-gray-200 pb-4 mb-2 gap-3">
+
+                    <div>
+
+                        <h2 class="text-2xl font-bold text-cugo-navy">Inventori & Gudang</h2>
+
+                        <p class="text-sm text-gray-500">Catat pemakaian barang, plastik, deterjen, parfum, dll.</p>
+
+                    </div>
+
+                    <button id="btn-restock-panel" onclick="openModal('modal-restock')" class="hidden w-full md:w-auto bg-cugo-navy hover:bg-cugo-navy-light text-white px-4 py-2 rounded-lg shadow font-medium text-sm flex items-center justify-center transition-colors">
+
+                        <i class="fas fa-truck-loading mr-2"></i> Input Barang Masuk (Restock)
+
+                    </button>
+
+                </div>
+
+
+
+                <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+
+                    <div class="xl:col-span-1">
+
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden sticky top-6">
+
+                            <div class="bg-cugo-teal px-5 py-4 border-b border-teal-600">
+
+                                <h3 class="text-lg font-semibold text-white"><i class="fas fa-box-open mr-2 text-teal-100"></i>Form Pengambilan</h3>
+
+                            </div>
+
+                            <form id="form-ambil-barang" onsubmit="submitPengambilanBarang(event)" class="p-5 space-y-4">
+
+                                <div>
+
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Yang Mengambil</label>
+
+                                    <select id="inv-karyawan" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-cugo-teal" required>
+
+                                        <option value="">-- Memuat Nama... --</option>
+
+                                    </select>
+
+                                </div>
+
+                                <div>
+
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Pilih Barang</label>
+
+                                    <select id="inv-barang" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-cugo-teal" required onchange="updateInfoStok()">
+
+                                        <option value="">-- Memuat Barang... --</option>
+
+                                    </select>
+
+                                    <p id="inv-info-stok" class="text-xs mt-1.5 font-medium text-gray-500 hidden fade-in">
+
+                                        Sisa stok di gudang: <span id="inv-angka-stok" class="font-bold text-cugo-teal text-sm">0</span>
+
+                                    </p>
+
+                                </div>
+
+                                <div>
+
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Jumlah Diambil</label>
+
+                                    <input type="number" id="inv-jumlah" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-cugo-teal" required min="0.1" step="0.1" value="1">
+
+                                </div>
+
+                                <button type="submit" class="w-full bg-cugo-teal hover:bg-teal-600 shadow-md text-white font-bold py-2.5 rounded-lg transition-colors mt-2">
+
+                                    Simpan Pengambilan
+
+                                </button>
+
+                            </form>
+
+                        </div>
+
+                    </div>
+
+
+
+                    <div class="xl:col-span-2">
+
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden h-full flex flex-col">
+
+                            <div class="bg-gray-50 px-5 py-3 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+
+                                <h3 class="text-lg font-semibold text-gray-800"><i class="fas fa-history mr-2 text-gray-400"></i>Riwayat Inventori Terakhir</h3>
+
+                                <select id="sort-inventori" onchange="renderInventori()" class="text-xs md:text-sm border-gray-300 rounded-md px-3 py-1.5 bg-white font-medium text-gray-700 focus:ring-cugo-teal border shadow-sm w-full sm:w-auto">
+
+                                    <option value="terbaru">Terbaru - Terlama</option>
+
+                                    <option value="terlama">Terlama - Terbaru</option>
+
+                                </select>
+
+                            </div>
+
+                            <div class="overflow-x-auto flex-1">
+
+                                <table class="w-full text-left text-sm whitespace-nowrap min-w-[600px]">
+
+                                    <thead class="bg-gray-100 text-gray-600 border-b border-gray-200">
+
+                                        <tr>
+
+                                            <th class="p-3 font-medium">Tanggal & Waktu</th>
+
+                                            <th class="p-3 font-medium">Karyawan / Aktor</th>
+
+                                            <th class="p-3 font-medium">Nama Barang</th>
+
+                                            <th class="p-3 font-medium text-center">Jumlah</th>
+
+                                            <th class="p-3 font-medium">Aktivitas</th>
+
+                                            <th class="p-3 font-medium text-center">Aksi</th>
+
+                                        </tr>
+
+                                    </thead>
+
+                                    <tbody id="tabel-inv-riwayat" class="divide-y divide-gray-100">
+
+                                        <tr><td colspan="6" class="p-4 text-center text-gray-400">Menyinkronkan data inventori...</td></tr>
+
+                                    </tbody>
+
+                                </table>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+
+            <section id="dashboard" class="page-content space-y-6 no-print">
+
+                <div class="flex flex-wrap gap-3 mb-2 justify-between items-center">
+
+                    <div class="flex space-x-2 w-full sm:w-auto">
+
+                        <button onclick="openModal('modal-log')" class="flex-1 sm:flex-none justify-center bg-cugo-teal hover:bg-teal-500 text-white px-4 py-2 rounded-lg shadow font-medium text-sm flex items-center transition-colors">
+
+                            <i class="fas fa-plus mr-2"></i> Input Kerja Harian
+
+                        </button>
+
+                        <button onclick="openModal('modal-evaluasi')" class="flex-1 sm:flex-none justify-center bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg shadow font-medium text-sm flex items-center transition-colors">
+
+                            <i class="fas fa-balance-scale mr-2"></i> Evaluasi KPI
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+                
+
+                <div class="bg-cugo-navy rounded-xl p-5 shadow-md flex items-center justify-between text-white overflow-hidden relative">
+
+                    <div class="absolute right-0 top-0 opacity-10 text-8xl transform translate-x-8 -translate-y-8"><i class="fas fa-coins"></i></div>
+
+                    <div class="relative z-10 w-full md:w-auto">
+
+                        <p class="text-xs md:text-sm text-blue-200 uppercase font-bold tracking-wider mb-1">Total Penjualan Kotor (Lunas + Piutang)</p>
+
+                        <p id="stat-total-semua" class="text-3xl md:text-4xl font-bold text-white">Rp 0</p>
+
+                    </div>
+
+                    <div class="relative z-10 hidden md:block text-right">
+
+                        <p class="text-sm text-blue-200 uppercase font-bold tracking-wider mb-1">Total Pesanan Masuk</p>
+
+                        <p id="stat-pesanan" class="text-2xl font-bold text-white">0 Nota</p>
+
+                    </div>
+
+                </div>
+
+
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+
+                    <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-green-500 flex flex-col justify-center">
+
+                        <div class="flex justify-between items-start mb-2">
+
+                            <p class="text-xs text-gray-500 uppercase font-bold">Uang Masuk (Lunas)</p>
+
+                            <span class="bg-green-100 text-green-700 text-[10px] px-2 py-0.5 rounded font-bold">KAS OK</span>
+
+                        </div>
+
+                        <p id="stat-omset-lunas" class="text-xl md:text-2xl font-bold text-gray-800">Rp 0</p>
+
+                    </div>
+
+                    
+
+                    <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-yellow-500 flex flex-col justify-center">
+
+                        <div class="flex justify-between items-start mb-2">
+
+                            <p class="text-xs text-gray-500 uppercase font-bold">Piutang (Belum Lunas)</p>
+
+                            <span class="bg-yellow-100 text-yellow-700 text-[10px] px-2 py-0.5 rounded font-bold">TAGIHAN</span>
+
+                        </div>
+
+                        <p id="stat-piutang" class="text-xl md:text-2xl font-bold text-gray-800">Rp 0</p>
+
+                    </div>
+
+
+
+                    <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-red-500 flex flex-col justify-center">
+
+                        <div class="flex justify-between items-start mb-2">
+
+                            <p class="text-xs text-gray-500 uppercase font-bold">Total Pengeluaran</p>
+
+                            <span class="bg-red-100 text-red-700 text-[10px] px-2 py-0.5 rounded font-bold">KELUAR</span>
+
+                        </div>
+
+                        <p id="stat-pengeluaran" class="text-xl md:text-2xl font-bold text-gray-800">Rp 0</p>
+
+                    </div>
+
+                    
+
+                    <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-purple-500 flex flex-col justify-center">
+
+                        <div class="flex justify-between items-start mb-2">
+
+                            <p class="text-xs text-gray-500 uppercase font-bold">Laba Bersih Kas</p>
+
+                            <span class="bg-purple-100 text-purple-700 text-[10px] px-2 py-0.5 rounded font-bold">PROFIT</span>
+
+                        </div>
+
+                        <p id="stat-laba" class="text-xl md:text-2xl font-bold text-gray-800">Rp 0</p>
+
+                        <p class="text-[10px] text-gray-400 mt-1">*Berdasarkan Uang Masuk</p>
+
+                    </div>
+
+                </div>
+
+
+
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+
+                    <div class="bg-white p-5 rounded-xl shadow-sm border">
+
+                        <div class="flex justify-between items-center mb-4">
+
+                            <h3 class="font-bold text-cugo-navy text-sm md:text-base"><i class="fas fa-chart-line text-blue-500 mr-2"></i>Grafik Omset Penjualan</h3>
+
+                            <select id="chart-periode" onchange="renderDashboard()" class="border-gray-300 rounded-md text-xs md:text-sm px-2 py-1 focus:ring-cugo-teal border bg-gray-50">
+
+                                <option value="harian">Per Hari</option>
+
+                                <option value="bulanan">Per Bulan</option>
+
+                                <option value="tahunan">Per Tahun</option>
+
+                            </select>
+
+                        </div>
+
+                        <div class="relative h-64 w-full"><canvas id="chartKeuangan"></canvas></div>
+
+                    </div>
+
+                    <div class="bg-white p-5 rounded-xl shadow-sm border">
+
+                        <h3 class="font-bold text-cugo-navy mb-4 text-sm md:text-base"><i class="fas fa-balance-scale text-purple-500 mr-2"></i>Proporsi Uang Kas</h3>
+
+                        <div class="relative h-64 w-full"><canvas id="chartLaba"></canvas></div>
+
+                    </div>
+
+                </div>
+
+
+
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+
+                    <div class="bg-white p-5 rounded-xl shadow-sm border overflow-hidden">
+
+                        <h3 class="font-bold text-cugo-navy mb-4"><i class="fas fa-trophy text-yellow-500 mr-2"></i>Top Performa Karyawan (KPI)</h3>
+
+                        <div class="overflow-x-auto overflow-y-auto max-h-60">
+
+                            <table class="w-full text-left text-sm whitespace-nowrap min-w-[300px]">
+
+                                <thead class="bg-gray-50 text-gray-500 sticky top-0"><tr><th class="p-2 font-medium">Karyawan & Volume Kerja</th><th class="p-2 text-right font-medium">Total Poin</th></tr></thead>
+
+                                <tbody id="tabel-kpi" class="divide-y divide-gray-100"><tr><td colspan="2" class="p-4 text-center text-gray-400">Memuat data KPI...</td></tr></tbody>
+
+                            </table>
+
+                        </div>
+
+                    </div>
+
+                    <div class="bg-white p-5 rounded-xl shadow-sm border overflow-hidden">
+
+                        <h3 class="font-bold text-cugo-navy mb-4"><i class="fas fa-star text-orange-500 mr-2"></i>Layanan Terfavorit</h3>
+
+                        <div class="overflow-x-auto overflow-y-auto max-h-60">
+
+                            <table class="w-full text-left text-sm whitespace-nowrap min-w-[300px]">
+
+                                <thead class="bg-gray-50 text-gray-500 sticky top-0"><tr><th class="p-2 font-medium">Nama Layanan</th><th class="p-2 text-right font-medium">Frekuensi Order</th></tr></thead>
+
+                                <tbody id="tabel-layanan" class="divide-y divide-gray-100"><tr><td colspan="2" class="p-4 text-center text-gray-400">Memuat data Layanan...</td></tr></tbody>
+
+                            </table>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+
+            <section id="rekap-kerja" class="page-content hidden space-y-4 no-print">
+
+                <div class="mb-4 border-b pb-3 border-gray-200">
+
+                    <h2 class="text-xl font-bold text-cugo-navy">Rekap Pekerjaan Karyawan</h2>
+
+                    <p class="text-sm text-gray-500">Total Kuantitas Pekerjaan (Cuci, Setrika, Jemput, Antar) berdasarkan rentang tanggal</p>
+
+                </div>
+
+                <div id="container-rekap" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+
+                    <div class="col-span-full text-center py-10 bg-white rounded-xl shadow-sm border">
+
+                        <i class="fas fa-spinner fa-spin text-3xl text-gray-300 mb-3 block"></i>
+
+                        <p class="text-gray-500">Memproses Rekap Data...</p>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+
+            <section id="pesanan" class="page-content hidden space-y-4 no-print">
+
+                <div class="flex flex-col xl:flex-row gap-4 mb-4 justify-between items-start xl:items-center">
+
+                    <h2 class="text-lg font-bold text-gray-700 w-full xl:w-auto">Manajemen Pesanan Aktif</h2>
+
+                    
+
+                    <div class="flex flex-col sm:flex-row gap-3 w-full xl:w-auto flex-wrap">
+
+                        <div class="relative w-full sm:w-56 md:w-64">
+
+                            <i class="fas fa-search absolute left-3 top-2.5 text-gray-400"></i>
+
+                            <input type="text" id="search-pesanan" onkeyup="renderPesanan()" class="w-full pl-9 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cugo-teal text-sm shadow-sm" placeholder="Cari Nota, Nama, Kurir, Lunas...">
+
+                        </div>
+
+                        
+
+                        <select id="sort-pesanan" onchange="renderPesanan()" class="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cugo-teal text-gray-700 shadow-sm w-full sm:w-auto cursor-pointer">
+
+                            <option value="terbaru">Terbaru - Terlama</option>
+
+                            <option value="terlama">Terlama - Terbaru</option>
+
+                        </select>
+
+                        
+
+                        <div class="flex space-x-2 w-full sm:w-auto">
+
+                            <input type="file" id="fileKasir" accept=".xlsx, .xls, .csv" class="hidden" onchange="prosesFileExcel(event)">
+
+                            <button onclick="document.getElementById('fileKasir').click()" class="flex-1 sm:flex-none justify-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow font-medium text-xs md:text-sm flex items-center transition-colors">
+
+                                <i class="fas fa-file-excel mr-2"></i> Kasir
+
+                            </button>
+
+                            
+
+                            <input type="file" id="filePekerjaan" accept=".xlsx, .xls, .csv" class="hidden" onchange="prosesFilePekerjaan(event)">
+
+                            <button onclick="document.getElementById('filePekerjaan').click()" class="flex-1 sm:flex-none justify-center bg-cugo-teal hover:bg-teal-600 text-white px-4 py-2 rounded-lg shadow font-medium text-xs md:text-sm flex items-center transition-colors">
+
+                                <i class="fas fa-cloud-upload-alt mr-2"></i> Update Kerja
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden w-full">
+
+                    <div class="overflow-x-auto">
+
+                        <table class="w-full text-left text-sm whitespace-nowrap min-w-[900px]">
+
+                            <thead class="bg-gray-100 text-gray-600">
+
+                                <tr>
+
+                                    <th class="px-4 py-3 font-medium">Tanggal</th>
+
+                                    <th class="px-4 py-3 font-medium">Nota & Pelanggan</th>
+
+                                    <th class="px-4 py-3 font-medium">Status & Pengambilan</th>
+
+                                    <th class="px-4 py-3 font-medium">Kurir / Pembuat</th>
+
+                                    <th class="px-4 py-3 font-medium">Rincian Layanan</th>
+
+                                    <th class="px-4 py-3 font-medium text-right">Total Transaksi</th>
+
+                                    <th class="px-4 py-3 text-center font-medium">Aksi Update</th>
+
+                                </tr>
+
+                            </thead>
+
+                            <tbody id="tabel-pesanan-body" class="divide-y divide-gray-100">
+
+                                <tr><td colspan="7" class="px-4 py-8 text-center text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>Menyinkronkan data...</td></tr>
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+
+            <section id="pelanggan" class="page-content hidden space-y-4 no-print">
+
+                <div class="flex flex-wrap gap-3 mb-4 justify-between items-center">
+
+                    <h2 class="text-lg font-bold text-gray-700">Loyalitas Pelanggan (Top Spender)</h2>
+
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+
+                    <div class="overflow-x-auto">
+
+                        <table class="w-full text-left text-sm whitespace-nowrap min-w-[500px]">
+
+                            <thead class="bg-gray-100 text-gray-600 border-b">
+
+                                <tr>
+
+                                    <th class="px-6 py-4 font-bold">Peringkat & Nama Pelanggan</th>
+
+                                    <th class="px-6 py-4 font-bold text-center">Total Kedatangan</th>
+
+                                    <th class="px-6 py-4 font-bold text-right">Total Belanja (Estimasi)</th>
+
+                                </tr>
+
+                            </thead>
+
+                            <tbody id="tabel-pelanggan-body" class="divide-y divide-gray-100">
+
+                                <tr><td colspan="3" class="px-4 py-8 text-center text-gray-400">Belum ada data pelanggan...</td></tr>
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+
+
+            <section id="karyawan" class="page-content hidden space-y-4 no-print">
+
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border-b border-gray-200 pb-4 mb-2">
+                    <div>
+                        <h2 class="text-xl md:text-2xl font-bold text-cugo-navy">Data Karyawan</h2>
+                        <p class="text-sm text-gray-500">Kelola data karyawan yang digunakan di operasional Cugo.</p>
+                    </div>
+
+                    <button onclick="openTambahKaryawan()" class="w-full md:w-auto bg-cugo-teal hover:bg-teal-600 text-white px-4 py-2.5 rounded-lg shadow font-bold text-sm flex items-center justify-center">
+                        <i class="fas fa-plus mr-2"></i> Tambah Karyawan
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="px-4 md:px-5 py-3 bg-gray-50 border-b flex flex-col sm:flex-row gap-3 justify-between sm:items-center">
+                        <div class="relative w-full sm:w-72">
+                            <i class="fas fa-search absolute left-3 top-2.5 text-gray-400"></i>
+                            <input type="text" id="search-karyawan" oninput="renderKaryawan()" class="w-full pl-9 pr-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cugo-teal" placeholder="Cari nama atau data karyawan...">
+                        </div>
+                        <span id="jumlah-karyawan" class="text-xs font-bold text-gray-500">0 Karyawan</span>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm whitespace-nowrap min-w-[700px]">
+                            <thead id="thead-karyawan" class="bg-gray-100 text-gray-600 border-b"></thead>
+                            <tbody id="tabel-karyawan-body" class="divide-y divide-gray-100">
+                                <tr>
+                                    <td class="p-6 text-center text-gray-400">Memuat data karyawan...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </section>
+
+
+            <section id="kedisiplinan" class="page-content hidden space-y-6 no-print">
+
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-gray-200 pb-4 mb-2">
+
+                    <div>
+
+                        <h2 class="text-2xl font-bold text-cugo-navy">Catatan Kedisiplinan Karyawan</h2>
+
+                        <p class="text-sm text-gray-500">Evaluasi performa, keterlambatan, dan pelanggaran SOP.</p>
+
+                    </div>
+
+                </div>
+
+
+
+                <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+
+                    <div class="xl:col-span-1">
+
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden sticky top-6">
+
+                            <div class="bg-cugo-navy px-5 py-4 border-b border-gray-700">
+
+                                <h3 class="text-lg font-semibold text-white"><i class="fas fa-edit mr-2 text-cugo-teal"></i>Buat Catatan Baru</h3>
+
+                            </div>
+
+                            <form id="form-kedisiplinan" onsubmit="submitKedisiplinan(event)" class="p-5 space-y-4">
+
+                                <div>
+
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal</label>
+
+                                    <input type="date" id="disiplin-tgl" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-cugo-teal" required>
+
+                                </div>
+
+                                <div>
+
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Karyawan</label>
+
+                                    <select id="disiplin-karyawan" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-cugo-teal" required>
+
+                                        <option value="">-- Pilih Karyawan --</option>
+
+                                        <option value="Aripin">Aripin</option>
+
+                                        <option value="Ayu Faradillah">Ayu Faradillah</option>
+
+                                        <option value="Echa Aditya">Echa Aditya</option>
+
+                                        <option value="Firmansyah">Firmansyah</option>
+
+                                        <option value="Nehpi Lestari">Nehpi Lestari</option>
+
+                                        <option value="Reny Handayani">Reny Handayani</option>
+
+                                        <option value="Sopi Andini">Sopi Andini</option>
+
+                                    </select>
+
+                                </div>
+
+                                <div>
+
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Jenis Pelanggaran / Catatan</label>
+
+                                    <select id="disiplin-jenis" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-cugo-teal" required>
+
+                                        <option value="">-- Pilih Jenis --</option>
+
+                                        <option value="Terlambat">Terlambat</option>
+
+                                        <option value="Mangkir / Bolos">Mangkir / Bolos</option>
+
+                                        <option value="Pulang Cepat">Pulang Cepat</option>
+
+                                        <option value="Pelanggaran Seragam">Pelanggaran Seragam</option>
+
+                                        <option value="Sikap Buruk">Sikap Buruk / Komplain</option>
+
+                                        <option value="Lainnya">Lainnya (Catat di detail)</option>
+
+                                    </select>
+
+                                </div>
+
+                                <div>
+
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Keterangan Detail</label>
+
+                                    <textarea id="disiplin-catatan" rows="3" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-cugo-teal" placeholder="Contoh: Terlambat 30 menit karena macet..." required></textarea>
+
+                                </div>
+
+                                <button type="submit" class="w-full bg-cugo-teal hover:bg-teal-600 text-white font-bold py-2 rounded-lg transition-colors">
+
+                                    Simpan Catatan
+
+                                </button>
+
+                            </form>
+
+                        </div>
+
+                    </div>
+
+
+
+                    <div class="xl:col-span-2">
+
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden h-full flex flex-col">
+
+                            <div class="bg-gray-50 px-5 py-4 border-b border-gray-200">
+
+                                <h3 class="text-lg font-semibold text-gray-800"><i class="fas fa-history mr-2 text-cugo-navy"></i>Riwayat Kedisiplinan</h3>
+
+                            </div>
+
+                            <div class="overflow-x-auto flex-1">
+
+                                <table class="w-full text-left text-sm whitespace-nowrap min-w-[500px]">
+
+                                    <thead class="bg-gray-100 text-gray-600 border-b">
+
+                                        <tr>
+
+                                            <th class="p-3 font-medium">Tanggal</th>
+
+                                            <th class="p-3 font-medium">Karyawan</th>
+
+                                            <th class="p-3 font-medium">Jenis</th>
+
+                                            <th class="p-3 font-medium">Detail Catatan</th>
+
+                                            <th class="p-3 font-medium text-center">Aksi</th>
+
+                                        </tr>
+
+                                    </thead>
+
+                                    <tbody id="tabel-kedisiplinan-body" class="divide-y divide-gray-100">
+
+                                        <tr><td colspan="5" class="p-4 text-center text-gray-400">Memuat data kedisiplinan...</td></tr>
+
+                                    </tbody>
+
+                                </table>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+
+            <section id="keuangan" class="page-content hidden space-y-6">
+
+                <div class="flex flex-col xl:flex-row gap-4 justify-between items-start xl:items-center no-print mb-2 border-b pb-3 border-gray-200">
+
+                    <div>
+
+                        <h2 class="text-2xl font-bold text-gray-800">Laporan Laba / Rugi (Income Statement)</h2>
